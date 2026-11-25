@@ -1543,6 +1543,8 @@
   function loadSDK() {
     if (S.promo) return Promise.resolve(null);
     if (location.protocol === "file:") return Promise.resolve(null);
+    const yandexHost = /(^|\.)yandex\.(ru|com|net)$/.test(location.hostname);
+    if (window.parent === window && !yandexHost) return Promise.resolve(null);
     return new Promise((resolve) => {
       let settled = false;
       const finish = async () => {
