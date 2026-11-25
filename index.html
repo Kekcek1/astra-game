@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#fff6e3">
+  <meta name="description" content="Сад Лучей — уютная головоломка о зайчике Луми, который возвращает свет в волшебный сад.">
+  <title>Сад Лучей</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23ffd05a'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23fff6e3'/%3E%3Ccircle cx='26' cy='29' r='2.6' fill='%232b2a4a'/%3E%3Ccircle cx='38' cy='29' r='2.6' fill='%232b2a4a'/%3E%3Cpath d='M26 37q6 5 12 0' fill='none' stroke='%232b2a4a' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene" aria-hidden="true"></canvas>
+
+    <div id="ui">
+      <div id="loading" class="loading" aria-live="polite">
+        <div class="loading-sun" aria-hidden="true"></div>
+        <div class="loading-title" id="loading-title">Сад Лучей</div>
+        <div class="loading-bar"><i></i></div>
+        <div class="loading-text" id="loading-text">Выращиваем лучики…</div>
+      </div>
+
+      <section id="screen-menu" class="screen menu" aria-label="Меню">
+        <header class="menu-top">
+          <div class="brand-mini">
+            <span class="brand-sun" aria-hidden="true"></span>
+            <span id="brand-name">Сад Лучей</span>
+          </div>
+          <div class="top-actions">
+            <button class="icon-btn" id="btn-profile" aria-label="Профиль" title="Профиль">
+              <span class="avatar-fallback" id="profile-avatar">Л</span>
+            </button>
+            <button class="icon-btn" id="btn-achievements" aria-label="Достижения" title="Достижения">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v4a4 4 0 0 1-8 0V4Z"/><path d="M8 5H5v2a3 3 0 0 0 3 3M16 5h3v2a3 3 0 0 1-3 3M12 12v5M8 21h8M9 17h6v4H9z"/></svg>
+            </button>
+            <button class="icon-btn" id="btn-settings" aria-label="Настройки" title="Настройки">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19 13.2a7 7 0 0 0 0-2.4l2-1.5-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14.2 3H9.8l-.4 2.7a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 2 1.2l.4 2.7h4.4l.4-2.7a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.5Z"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="menu-hero">
+          <div class="menu-copy">
+            <div class="eyebrow" id="menu-eyebrow">Уютная головоломка</div>
+            <h1 class="logo" id="menu-logo">Сад<br><span>Лучей</span></h1>
+            <p class="tagline" id="menu-tagline">Помоги зайчику Луми вернуть солнце в волшебный сад.</p>
+            <div class="progress-wrap" id="menu-progress-wrap">
+              <div class="progress-top"><span id="menu-progress-label">Прогресс сада</span><strong id="menu-progress-value">0%</strong></div>
+              <div class="progress"><i id="menu-progress-bar"></i></div>
+            </div>
+            <button class="btn btn-primary btn-xl" id="btn-play">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5-10-6.5Z" fill="currentColor" stroke="none"/></svg>
+              <span id="btn-play-label">Играть</span>
+            </button>
+            <div class="menu-row">
+              <button class="btn btn-soft" id="btn-levels">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v6H4zM14 15h6v6h-6z"/></svg>
+                <span id="btn-levels-label">Уровни</span>
+              </button>
+              <button class="btn btn-ghost" id="btn-howto">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 9a2.5 2.5 0 1 1 4.2 1.8c-1 .8-1.7 1.3-1.7 2.7"/><path d="M12 17.5h.01"/></svg>
+                <span id="btn-howto-label">Как играть</span>
+              </button>
+            </div>
+            <div class="menu-stats">
+              <div class="stat-pill"><span class="stat-icon star-icon" aria-hidden="true"></span><strong id="menu-stars">0</strong><span id="menu-stars-label">звёзд</span></div>
+              <div class="stat-pill"><span class="stat-icon fly-icon" aria-hidden="true"></span><strong id="menu-flies">3</strong><span id="menu-flies-label">светлячка</span></div>
+            </div>
+          </div>
+          <div class="menu-scene-space" id="menu-scene-space" aria-hidden="true"></div>
+        </div>
+
+        <footer class="menu-bottom">
+          <button class="daily-card" id="btn-daily">
+            <span class="daily-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3v3M4.2 7.2l2.1 2.1M19.8 7.2l-2.1 2.1M3 14h3M18 14h3M5.5 19.5l2-2M18.5 19.5l-2-2"/><circle cx="12" cy="13" r="4"/></svg>
+              <i id="daily-badge"></i>
+            </span>
+            <span class="daily-copy"><strong id="daily-title">Подарок дня</strong><small id="daily-sub">Загляни в сад за светлячками</small></span>
+            <span class="daily-arrow" aria-hidden="true">›</span>
+          </button>
+          <div class="menu-footnote" id="menu-footnote">Тихо, тепло и без спешки</div>
+        </footer>
+      </section>
+
+      <section id="screen-levels" class="screen levels hidden" aria-label="Уровни">
+        <header class="page-top">
+          <button class="icon-btn" id="btn-levels-back" aria-label="Назад">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
+          </button>
+          <div class="page-heading">
+            <h2 id="levels-title">Садовые тропинки</h2>
+            <p id="levels-sub">40 уровней, 4 уголка сада</p>
+          </div>
+          <div class="res-pill"><span class="stat-icon star-icon" aria-hidden="true"></span><strong id="levels-stars">0</strong></div>
+        </header>
+        <div class="chapter-tabs" id="chapter-tabs" role="tablist"></div>
+        <div class="level-grid" id="level-grid"></div>
+        <footer class="levels-foot">
+          <p id="levels-hint">Собирай звёзды за аккуратные решения.</p>
+          <button class="btn btn-soft btn-small" id="btn-levels-reward">
+            <span class="stat-icon fly-icon" aria-hidden="true"></span>
+            <span id="levels-reward-label">Смотреть рекламу · +5</span>
+          </button>
+        </footer>
+      </section>
+
+      <section id="screen-game" class="screen game hidden" aria-label="Игра">
+        <header id="game-top">
+          <button class="icon-btn" id="btn-game-back" aria-label="К уровням">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
+          </button>
+          <div class="game-heading">
+            <span id="game-chapter">Поляна</span>
+            <strong id="game-level">Уровень 1</strong>
+          </div>
+          <div class="game-top-right">
+            <div class="mini-stars" id="game-stars" aria-label="Звёзды"></div>
+            <div class="res-pill small"><span class="stat-icon fly-icon" aria-hidden="true"></span><strong id="game-flies">3</strong></div>
+            <button class="icon-btn" id="btn-game-pause" aria-label="Пауза">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div id="board-frame"></div>
+
+        <aside id="game-panel">
+          <div class="goal-card">
+            <div class="goal-title"><span id="goal-label">Зажги все цветы</span><strong id="goal-count">0/1</strong></div>
+            <div class="goal-flowers" id="goal-flowers"></div>
+            <p class="game-tip" id="game-tip"></p>
+          </div>
+          <div class="moves-card">
+            <div><span id="moves-label">Ходы</span><strong id="moves-count">0</strong></div>
+            <div><span id="best-label">Лучший</span><strong id="best-count">—</strong></div>
+            <div><span id="par-label">Норма</span><strong id="par-count">0</strong></div>
+          </div>
+          <div class="game-actions">
+            <button class="btn btn-hint" id="btn-hint">
+              <span class="bulb-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M8.5 14a6 6 0 1 1 7 0c-.9.7-1.5 1.6-1.5 2.5H10c0-.9-.6-1.8-1.5-2.5Z"/></svg>
+              </span>
+              <span id="hint-label">Подсказка</span>
+              <span class="cost" id="hint-cost">1</span>
+            </button>
+            <div class="game-action-row">
+              <button class="btn btn-soft" id="btn-undo">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5"/><path d="M4 12h9a6 6 0 0 1 6 6"/></svg>
+                <span id="undo-label">Отменить</span>
+              </button>
+              <button class="btn btn-soft" id="btn-reset">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12a7 7 0 1 1-2-5"/><path d="M19 4v6h-6"/></svg>
+                <span id="reset-label">Заново</span>
+              </button>
+            </div>
+          </div>
+          <p class="game-hintline" id="game-hintline"></p>
+        </aside>
+      </section>
+    </div>
+
+    <div id="modal-layer" class="modal-layer hidden" role="presentation"></div>
+    <div id="toast-layer" class="toast-layer" aria-live="polite"></div>
+  </div>
+
+  <script src="assets/i18n.js"></script>
+  <script src="assets/levels.js"></script>
+  <script src="assets/puzzle.js"></script>
+  <script src="assets/render.js"></script>
+  <script src="assets/audio.js"></script>
+  <script src="assets/game.js"></script>
+</body>
+</html>
