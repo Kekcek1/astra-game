@@ -15,7 +15,8 @@
 - поддержка Яндекс Games SDK: `LoadingAPI.ready()`, `GameplayAPI`,
   реклама, лидерборды. Если SDK недоступен (как на GitHub Pages), игра
   работает в локальном режиме и не падает.
-- отдельная концепция новой игры для следующей сессии: [EMBERSHIFT](./EMBERSHIFT_GAME_PROMPT.md).
+- отдельная концепция новой игры для следующей сессии: [«Тёплый контур»](./NEW_GAME_IDEA_RU.md);
+- англоязычный расширенный бриф: [EMBERSHIFT](./EMBERSHIFT_GAME_PROMPT.md).
 
 ## Управление
 
@@ -48,7 +49,8 @@ astra-game-site/
 ├── assets/                       # JS, CSS, шрифты и уровни
 ├── tools/extend-levels.mjs       # воспроизводимая генерация ещё 80 уровней
 ├── tools/test-campaign.mjs       # проверка уровня кампании и режима задач
-├── EMBERSHIFT_GAME_PROMPT.md     # техническое ТЗ для новой игры
+├── NEW_GAME_IDEA_RU.md           # идея и задание для новой игры
+├── EMBERSHIFT_GAME_PROMPT.md     # расширенный англоязычный бриф новой игры
 ├── echo-station/                 # отдельный прототип Echo Station
 ├── .nojekyll           # GitHub Pages: не прогонять через Jekyll
 └── README.md
