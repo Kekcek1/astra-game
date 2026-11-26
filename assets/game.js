@@ -1,13 +1,13 @@
 (function () {
   "use strict";
 
-  const VERSION = "1.0.0";
+  const VERSION = "1.2.0";
   const SAVE_KEY = "gardenOfRays.save.v1";
-  const LEVELS = window.LEVELS || [];
+  const LEVELS = [...(window.LEVELS || []), ...(window.EXTRA_LEVELS || [])];
   const LEVEL_MAP = new Map(LEVELS.map((l) => [l.id, l]));
-  const CHAPTERS = 4;
+  const CHAPTERS = 12;
   const PER_CHAPTER = 10;
-  const TOTAL_LEVELS = 40;
+  const TOTAL_LEVELS = LEVELS.length;
   const LEADERBOARD = "garden_stars";
 
   const PROMO_TITLES = {
@@ -61,6 +61,7 @@
       settings: { lang: null, music: true, sfx: true },
       lastLevel: 1,
       resume: null,
+      endless: { seed: 0, stage: 0, best: 0, inRun: false, current: null },
       updatedAt: 0,
     };
   }
@@ -77,7 +78,7 @@
     { id: "perfect10", icon: "◎", test: (s) => perfectCount(s) >= 10, value: (s) => Math.min(perfectCount(s), 10), target: 10 },
     { id: "nohint10", icon: "◈", test: (s) => noHintCount(s) >= 10, value: (s) => Math.min(noHintCount(s), 10), target: 10 },
     { id: "daily3", icon: "☀", test: (s) => (s.daily.streak || 0) >= 3, value: (s) => Math.min(s.daily.streak || 0, 3), target: 3 },
-    { id: "collector", icon: "✿", test: (s) => completedCount(s) >= 40, value: (s) => Math.min(completedCount(s), 40), target: 40 },
+    { id: "collector", icon: "✿", test: (s) => completedCount(s) >= TOTAL_LEVELS, value: (s) => Math.min(completedCount(s), TOTAL_LEVELS), target: TOTAL_LEVELS },
   ];
 
   const S = {
@@ -127,7 +128,8 @@
     const base = defaultSave();
     if (!raw || typeof raw !== "object") return base;
     const s = Object.assign(base, raw);
-    s.unlocked = clamp(Number(s.unlocked) || 1, 1, TOTAL_LEVELS);
+    const oldUnlock = Number(raw.unlocked) || 1;
+    s.unlocked = clamp(oldUnlock, 1, TOTAL_LEVELS);
     s.fireflies = clamp(Math.floor(Number(s.fireflies) || 0), 0, 999999);
     s.levels = {};
     if (raw.levels && typeof raw.levels === "object") {
@@ -144,6 +146,26 @@
         };
       }
     }
+    const savedEndless = raw.endless && typeof raw.endless === "object" ? raw.endless : {};
+    s.endless = {
+      seed: Math.max(0, Math.floor(Number(savedEndless.seed) || 0)),
+      stage: Math.max(0, Math.floor(Number(savedEndless.stage) || 0)),
+      best: Math.max(0, Math.floor(Number(savedEndless.best) || 0)),
+      inRun: !!savedEndless.inRun,
+      current: null,
+    };
+    if (savedEndless.current && Array.isArray(savedEndless.current.bits) && Number(savedEndless.current.stage) === s.endless.stage + 1) {
+      s.endless.current = {
+        stage: Math.floor(Number(savedEndless.current.stage)),
+        bits: savedEndless.current.bits.map(bit => bit ? 1 : 0),
+        taps: Math.max(0, Math.floor(Number(savedEndless.current.taps) || 0)),
+        usedHint: !!savedEndless.current.usedHint,
+      };
+    }
+    const oldCampaignComplete = Object.keys(s.levels).length >= 40 &&
+      Array.from({ length: 40 }, (_, i) => s.levels[i + 1]).every((level) => level && level.stars > 0);
+    if (oldCampaignComplete) s.unlocked = Math.max(s.unlocked, 41);
+    if (s.unlocked === 40 && Array.from({ length: 40 }, (_, i) => s.levels[i + 1]).every((level) => level && level.stars > 0)) s.unlocked = 41;
     s.achievements = Array.isArray(raw.achievements)
       ? [...new Set(raw.achievements.filter((id) => ACHIEVEMENTS.some((a) => a.id === id)))]
       : [];
@@ -198,7 +220,7 @@
       "menu-stars", "menu-stars-label", "menu-flies", "menu-flies-label",
       "btn-daily", "daily-title", "daily-sub", "daily-badge", "menu-footnote",
       "screen-levels", "btn-levels-back", "levels-title", "levels-sub", "levels-stars",
-      "chapter-tabs", "level-grid", "levels-hint", "btn-levels-reward", "levels-reward-label",
+      "chapter-tabs", "level-grid", "levels-hint", "btn-levels-reward", "levels-reward-label", "btn-endless",
       "screen-game", "btn-game-back", "game-chapter", "game-level", "game-stars", "game-flies",
       "btn-game-pause", "board-frame", "game-panel", "goal-label", "goal-count", "goal-flowers",
       "game-tip", "moves-label", "moves-count", "best-label", "best-count", "par-label", "par-count",
@@ -403,6 +425,7 @@
   function renderLevels() {
     const done = completedCount(S.save);
     const current = nextLevelToPlay();
+    D["btn-endless"].textContent = t("endless.button", { stage: S.save.endless.best || 0 });
     if (S.activeChapter < 0 || S.activeChapter >= CHAPTERS) S.activeChapter = 0;
     const chapterStart = S.activeChapter * PER_CHAPTER + 1;
     if (S.save.unlocked < chapterStart) S.activeChapter = 0;
@@ -410,7 +433,7 @@
     D["levels-stars"].textContent = totalStars(S.save);
     D["levels-hint"].textContent = t("levels.hint");
     D["levels-reward-label"].textContent = t("levels.reward");
-    D["screen-levels"].classList.toggle("night", S.activeChapter === 3);
+    D["screen-levels"].classList.toggle("night", S.activeChapter === 3 || S.activeChapter >= 8);
 
     D["chapter-tabs"].innerHTML = Array.from({ length: CHAPTERS }, (_, ch) => {
       const locked = S.save.unlocked < ch * PER_CHAPTER + 1;
@@ -418,6 +441,10 @@
       return '<button class="chapter-tab' + (active ? " active" : "") + (locked ? " locked" : "") + '" role="tab" aria-selected="' + active + '" data-ch="' + ch + '">' +
         (locked ? ICON_LOCK : "") + '<span>' + t("chapter." + ch) + "</span></button>";
     }).join("");
+    const activeTab = D["chapter-tabs"].querySelector(".chapter-tab.active");
+    if (activeTab && (activeTab.offsetLeft < D["chapter-tabs"].scrollLeft || activeTab.offsetLeft + activeTab.offsetWidth > D["chapter-tabs"].scrollLeft + D["chapter-tabs"].clientWidth)) {
+      D["chapter-tabs"].scrollTo({ left: activeTab.offsetLeft, behavior: "instant" });
+    }
 
     const cells = [];
     for (let i = 0; i < PER_CHAPTER; i++) {
@@ -523,10 +550,10 @@
   }
 
   function startLevel(id, opts) {
-    const lv = levelById(id);
-    if (!lv || id > S.save.unlocked) return;
     opts = opts || {};
-    const resume = opts.resume && S.save.resume && S.save.resume.id === id ? S.save.resume : null;
+    const lv = opts.level || levelById(id);
+    if (!lv || (!lv.endless && id > S.save.unlocked)) return;
+    const resume = lv.endless ? opts.resumeState : opts.resume && S.save.resume && S.save.resume.id === id ? S.save.resume : null;
     const bits = new Array(lv.mirrors.length).fill(0);
     let taps = 0;
     let usedHint = false;
@@ -539,6 +566,7 @@
 
     S.current = {
       level: lv,
+      endless: !!lv.endless,
       bits,
       taps,
       history: [],
@@ -555,8 +583,10 @@
       fromResume: !!resume,
     };
     S.paused = false;
-    S.save.lastLevel = id;
-    S.save.resume = { id, bits: bits.slice(), taps, usedHint };
+    if (!lv.endless) {
+      S.save.lastLevel = id;
+      S.save.resume = { id, bits: bits.slice(), taps, usedHint };
+    }
     saveLocal();
     closeModal(false);
     showScreen("game");
@@ -579,6 +609,44 @@
     GameAudio.ensure();
   }
 
+  function startEndless() {
+    let seed = window.EndlessGarden.dailySeed();
+    const endless = S.save.endless;
+    if (!endless.seed) {
+      endless.seed = seed;
+      endless.stage = 0;
+      endless.inRun = true;
+      persist(true, true);
+    } else seed = endless.seed;
+    const stage = Math.max(1, endless.stage + 1);
+    const level = window.EndlessGarden.generate(seed, stage);
+    if (!level) {
+      toast(t("endless.unavailable"), "!");
+      return;
+    }
+    LEVEL_MAP.set(level.id, level);
+    S.save.resume = null;
+    endless.inRun = true;
+    saveLocal();
+    startLevel(level.id, { level, resumeState: endless.current });
+  }
+
+  function finishEndless(cur) {
+    const progress = S.save.endless;
+    const nextStage = cur.level.endlessStage;
+    progress.stage = nextStage;
+    progress.best = Math.max(progress.best || 0, nextStage);
+    S.save.resume = null;
+    progress.inRun = true;
+    progress.current = null;
+    persist(true, true);
+    cur.finishing = false;
+    syncGameplay();
+    renderMenu();
+    renderLevels();
+    openModal("endless", { stage: nextStage, best: progress.best }, { pauseGame: false, resume: false, dismiss: false });
+  }
+
   function recompute(checkWin) {
     const cur = S.current;
     if (!cur) return;
@@ -587,7 +655,11 @@
     updateScene();
     renderGameUI();
     if (!cur.solved) {
-      S.save.resume = { id: cur.level.id, bits: cur.bits.slice(), taps: cur.taps, usedHint: cur.usedHint };
+      if (cur.endless) {
+        S.save.endless.current = { stage: cur.level.endlessStage, bits: cur.bits.slice(), taps: cur.taps, usedHint: cur.usedHint };
+      } else {
+        S.save.resume = { id: cur.level.id, bits: cur.bits.slice(), taps: cur.taps, usedHint: cur.usedHint };
+      }
       saveLocal();
     }
     if (checkWin && !cur.solved && !cur.finishing && cur.level.flowers.every((f, i) => cur.lit.has(i))) {
@@ -626,6 +698,10 @@
   function finishLevel() {
     const cur = S.current;
     if (!cur || !cur.solved) return;
+    if (cur.endless) {
+      finishEndless(cur);
+      return;
+    }
     const lv = cur.level;
     const stars = starsFor(cur.taps, lv.par);
     const old = S.save.levels[lv.id] || { stars: 0, bestTaps: 0, noHint: false };
@@ -770,7 +846,7 @@
     const lv = cur.level;
     const litCount = cur.lit ? cur.lit.size : 0;
     const total = lv.flowers.length;
-    D["screen-game"].classList.toggle("night", lv.chapter === 3);
+    D["screen-game"].classList.toggle("night", lv.chapter === 3 || lv.chapter >= 8);
     D["game-chapter"].textContent = t("chapter." + lv.chapter);
     D["game-level"].textContent = t("common.level") + " " + lv.id;
     D["goal-count"].textContent = litCount + "/" + total;
@@ -858,8 +934,16 @@
       GameAudio.sfx("ui");
     });
     D["btn-levels-reward"].addEventListener("click", () => openModal("reward", {}, { dismiss: true }));
+    D["btn-endless"].addEventListener("click", () => {
+      GameAudio.sfx("ui");
+      GameAudio.ensure();
+      startEndless();
+    });
     D["btn-game-back"].addEventListener("click", () => {
-      if (S.current && !S.current.solved) S.save.resume = { id: S.current.level.id, bits: S.current.bits.slice(), taps: S.current.taps, usedHint: S.current.usedHint };
+      if (S.current && !S.current.solved) {
+        if (S.current.endless) S.save.endless.current = { stage: S.current.level.endlessStage, bits: S.current.bits.slice(), taps: S.current.taps, usedHint: S.current.usedHint };
+        else S.save.resume = { id: S.current.level.id, bits: S.current.bits.slice(), taps: S.current.taps, usedHint: S.current.usedHint };
+      }
       saveLocal();
       S.paused = false;
       showScreen("levels");
@@ -1074,6 +1158,7 @@
       case "leaderboard": return renderLeaderboardModal(data);
       case "pause": return renderPauseModal();
       case "complete": return renderCompleteModal(data);
+      case "endless": return renderEndlessModal(data);
       default: return "";
     }
   }
@@ -1317,6 +1402,19 @@
     });
   }
 
+  function renderEndlessModal(data) {
+    const actions = '<button class="btn btn-primary" data-act="endless-next" data-autofocus>' + t("endless.next") + "</button>" +
+      '<button class="btn btn-soft" data-act="levels">' + t("complete.toLevels") + "</button>";
+    return modalShell({
+      kicker: t("endless.kicker"),
+      title: t("endless.stage", { stage: data.stage }),
+      sub: t("endless.best", { stage: data.best }),
+      body: t("endless.done"),
+      actions,
+      closable: false,
+    });
+  }
+
   function modalAction(act, val, el) {
     GameAudio.ensure();
     GameAudio.sfx("ui");
@@ -1368,6 +1466,10 @@
       case "next-level":
         closeModal(false);
         maybeShowInterstitial(() => startLevel(Number(val)));
+        break;
+      case "endless-next":
+        closeModal(false);
+        startEndless();
         break;
       case "replay":
         closeModal(false);
