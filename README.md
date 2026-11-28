@@ -34,7 +34,7 @@ Space — рывок, автоматическая стрельба; на тел
 ## Локальный запуск
 
 ```powershell
-cd G:\sessions\astra-game-site
+cd G:\1_PROJECTS\astra-game-site
 npx --yes serve .
 ```
 
@@ -79,6 +79,6 @@ node tools/test-campaign.mjs
 
 ## Источник
 
-Исходный проект: `G:\sessions\ses_deeaa9de3ffenZZDqNhvRpUQQZ\garden-of-rays`
+Исходный проект: `G:\5_ARCHIVE\sessions\2026-11\2026-11-25\artifacts\garden-of-rays`
 (сессия «Сад Лучей — Yandex Games»). Этот репозиторий — публичная витрина
 играбельного билда.
